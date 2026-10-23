@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-
+import axios from 'axios';
 import { api } from './api';
 
 import type { Note } from '@/types/note';
@@ -54,26 +54,45 @@ export async function fetchNoteById(
   return response.data;
 }
 
-export async function checkSession() {
-  const cookieHeader = await getCookieHeader();
 
-  const response = await api.get('/auth/session', {
-    headers: {
-      Cookie: cookieHeader,
-    },
-  });
+export async function checkSession(
+  cookieHeader?: string
+): Promise<User | null> {
+  try {
+    const cookie = cookieHeader ?? (await getCookieHeader());
 
-  return response.data ?? null;
+    const response = await api.get<User | null>('/auth/session', {
+      headers: {
+        Cookie: cookie,
+      },
+    });
+
+    return response.data ?? null;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
-export async function getMe(): Promise<User> {
-  const cookieHeader = await getCookieHeader();
+export async function getMe(): Promise<User | null> {
+  try {
+    const cookieHeader = await getCookieHeader();
 
-  const response = await api.get('/users/me', {
-    headers: {
-      Cookie: cookieHeader,
-    },
-  });
+    const response = await api.get<User>('/users/me', {
+      headers: {
+        Cookie: cookieHeader,
+      },
+    });
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      return null;
+    }
+
+    throw error;
+  }
 }

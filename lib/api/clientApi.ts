@@ -1,3 +1,6 @@
+
+import axios from 'axios';
+
 import { api } from './api';
 
 import type { Note } from '@/types/note';
@@ -9,17 +12,19 @@ interface AuthData {
   password: string;
 }
 
+interface FetchNotesParams {
+  search?: string;
+  page?: number;
+  tag?: string;
+}
+
 // ================= NOTES =================
 
 export async function fetchNotes({
   search = '',
   page = 1,
   tag,
-}: {
-  search?: string;
-  page?: number;
-  tag?: string;
-}): Promise<FetchNotesResponse> {
+}: FetchNotesParams): Promise<FetchNotesResponse> {
   const response = await api.get<FetchNotesResponse>('/notes', {
     params: {
       search,
@@ -32,59 +37,38 @@ export async function fetchNotes({
   return response.data;
 }
 
-export async function fetchNoteById(
-  id: string
-): Promise<Note> {
+export async function fetchNoteById(id: string): Promise<Note> {
   const response = await api.get<Note>(`/notes/${id}`);
 
   return response.data;
 }
 
-export async function createNote(
-  noteData: {
-    title: string;
-    content: string;
-    tag: string;
-  }
-): Promise<Note> {
-  const response = await api.post<Note>(
-    '/notes',
-    noteData
-  );
+export async function createNote(noteData: {
+  title: string;
+  content: string;
+  tag: string;
+}): Promise<Note> {
+  const response = await api.post<Note>('/notes', noteData);
 
   return response.data;
 }
 
-export async function deleteNote(
-  id: string
-): Promise<Note> {
-  const response = await api.delete<Note>(
-    `/notes/${id}`
-  );
+export async function deleteNote(id: string): Promise<Note> {
+  const response = await api.delete<Note>(`/notes/${id}`);
 
   return response.data;
 }
 
 // ================= AUTH =================
 
-export async function register(
-  credentials: AuthData
-): Promise<User> {
-  const response = await api.post<User>(
-    '/auth/register',
-    credentials
-  );
+export async function register(credentials: AuthData): Promise<User> {
+  const response = await api.post<User>('/auth/register', credentials);
 
   return response.data;
 }
 
-export async function login(
-  credentials: AuthData
-): Promise<User> {
-  const response = await api.post<User>(
-    '/auth/login',
-    credentials
-  );
+export async function login(credentials: AuthData): Promise<User> {
+  const response = await api.post<User>('/auth/login', credentials);
 
   return response.data;
 }
@@ -94,24 +78,35 @@ export async function logout(): Promise<void> {
 }
 
 export async function checkSession(): Promise<User | null> {
-  const response = await api.get('/auth/session');
+  try {
+    const response = await api.get<User | null>('/auth/session');
 
-  return response.data ?? null;
+    return response.data ?? null;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
-export async function getMe(): Promise<User> {
-  const response = await api.get<User>('/users/me');
+export async function getMe(): Promise<User | null> {
+  try {
+    const response = await api.get<User>('/users/me');
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
-export async function updateMe(
-  userData: Partial<User>
-): Promise<User> {
-  const response = await api.patch<User>(
-    '/users/me',
-    userData
-  );
+export async function updateMe(userData: Partial<User>): Promise<User> {
+  const response = await api.patch<User>('/users/me', userData);
 
   return response.data;
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-
+import { redirect } from 'next/navigation';
 import css from './page.module.css';
 
 import { getMe } from '@/lib/api/serverApi';
@@ -11,8 +11,13 @@ export const metadata: Metadata = {
   description: 'User profile page',
 };
 
+
 export default async function ProfilePage() {
   const user = await getMe();
+
+  if (!user) {
+    redirect('/sign-in');
+  }
 
   return (
     <main className={css.mainContent}>
