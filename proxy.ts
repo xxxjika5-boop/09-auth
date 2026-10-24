@@ -37,15 +37,33 @@ export async function proxy(request: NextRequest) {
     publicRoutes
   );
 
+  const nextResponse = NextResponse.next();
+
   if (!hasAccessToken && refreshToken) {
     try {
       const cookieHeader = request.cookies.toString();
 
-      const response = await checkSession(cookieHeader);
-
-      hasAccessToken = Boolean(
-        response.data?.success
+      const response = await checkSession(
+        cookieHeader
       );
+
+      const setCookie =
+        response.headers['set-cookie'];
+
+      if (setCookie) {
+        hasAccessToken = true;
+
+        const cookies = Array.isArray(setCookie)
+          ? setCookie
+          : [setCookie];
+
+        for (const cookie of cookies) {
+          nextResponse.headers.append(
+            'set-cookie',
+            cookie
+          );
+        }
+      }
     } catch {
       hasAccessToken = false;
     }
@@ -63,7 +81,7 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  return NextResponse.next();
+  return nextResponse;
 }
 
 export const config = {
